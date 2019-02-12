@@ -16,5 +16,4 @@ public class ClientDto {
     String firstName;
     String lastName;
     Long telephone;
-    Set<Record> records;
 }

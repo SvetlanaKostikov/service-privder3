@@ -11,11 +11,12 @@ import java.time.ZonedDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DayOfWeekDto {
+    String name;
     Boolean	isAvailable;
-    ZonedDateTime startDay;
-    ZonedDateTime	endDay;
+    String startDay;
+    String endDay;
     Integer	breakeInMinute;
-    ZonedDateTime	breakStart;
+    String breakStart;
 
 
 }

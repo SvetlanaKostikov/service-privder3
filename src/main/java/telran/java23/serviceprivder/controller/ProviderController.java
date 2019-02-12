@@ -6,10 +6,14 @@ import telran.java23.serviceprivder.dao.ProviderRepository;
 import telran.java23.serviceprivder.dto.ProviderDto;
 import telran.java23.serviceprivder.dto.ProviderRegisterDto;
 import telran.java23.serviceprivder.dto.ScheduleDto;
+import telran.java23.serviceprivder.model.DayOfWeek;
 import telran.java23.serviceprivder.model.Provider;
 import telran.java23.serviceprivder.model.Schedule;
 import telran.java23.serviceprivder.service.ProviderService;
 
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -34,7 +38,7 @@ public class ProviderController {
         return providerService.createSchedule(email,scheduleDto);
     }
     @PutMapping("/update/{email}")
-    public Provider updateProvider(@PathVariable String email,@RequestBody ProviderDto provider){
+    public ProviderDto updateProvider(@PathVariable String email,@RequestBody ProviderDto provider){
         return providerService.updateProvider(email,provider);
     }
     @GetMapping("/login")
@@ -46,10 +50,10 @@ public class ProviderController {
     public ProviderDto showProfileProvider(@PathVariable String email){
         return providerService.showProfileProvider(email);
     }
-    @DeleteMapping("/schedule/{email}")
-    public Schedule deleteSchedule(@PathVariable String email){
-        return providerService.deleteSchedule(email);
-    }
+//    @DeleteMapping("/schedule/{email}")
+//    public Schedule deleteSchedule(@PathVariable String email){
+//        return providerService.deleteSchedule(email);
+//    }
     @GetMapping("/providers")
     public Set<Provider> showAllProviders(){
         return providerService.showAllProviders();
@@ -57,6 +61,10 @@ public class ProviderController {
     @GetMapping("/schedule/{email}")
     public Schedule showSchedule(@PathVariable String email){
         return providerService.showSchedule(email);
+    }
+    @GetMapping("/realschedule/{email}")
+    public Map<LocalDate, DayOfWeek> showRealSchedule(@PathVariable String email){
+        return providerService.showRealSchedule(email);
     }
 
 

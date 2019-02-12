@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import telran.java23.serviceprivder.model.Address;
+import telran.java23.serviceprivder.model.Record;
+import telran.java23.serviceprivder.model.Schedule;
 import telran.java23.serviceprivder.model.Service;
 
 import java.util.Set;
@@ -21,6 +23,8 @@ public class ProviderDto {
     Address address;
     Boolean isActive;
     Set<Service> services;
+    Double vote;
+  //  Set<String>comments;
 
 
 }

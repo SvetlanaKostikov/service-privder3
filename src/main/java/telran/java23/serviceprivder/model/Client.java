@@ -4,6 +4,9 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 @NoArgsConstructor
@@ -19,5 +22,6 @@ public class Client {
     String firstName;
     String lastName;
     Long telephone;
-    Set<Record> records;
+    LinkedHashMap<LocalDateTime,Record> records;
+
 }
