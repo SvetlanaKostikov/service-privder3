@@ -9,17 +9,17 @@ import telran.java23.serviceprivder.dao.ProviderRepository;
 import telran.java23.serviceprivder.dao.RecordRepository;
 import telran.java23.serviceprivder.dto.ClientDto;
 import telran.java23.serviceprivder.dto.ClientRegisterDto;
-import telran.java23.serviceprivder.dto.ProviderDto;
 import telran.java23.serviceprivder.dto.RecordDto;
+import telran.java23.serviceprivder.dto.RecordUpdateDto;
 import telran.java23.serviceprivder.exeptions.ErrorTimeException;
 import telran.java23.serviceprivder.exeptions.UserExistEcxeption;
+import telran.java23.serviceprivder.exeptions.RecordExistException;
 import telran.java23.serviceprivder.model.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
 import java.util.*;
 
 @Service
@@ -41,6 +41,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Autowired
     AccountConfiguration accountConfiguration;
+
     @Override
     public ClientDto addNewClient(ClientRegisterDto clientDto) {
         if (clientRepository.existsById(clientDto.getEmail())) {
@@ -48,14 +49,15 @@ public class ClientServiceImpl implements ClientService {
 
         }
 //        String hashPassword = encoder.encode(clientDto.getPassword());
-        Client client = new Client(clientDto.getEmail(),clientDto.getPassword(),clientDto.getFirstName(),clientDto.getLastName(),
-                clientDto.getTelephone(),null);
+        Client client = new Client(clientDto.getEmail(), clientDto.getPassword(), clientDto.getFirstName(), clientDto.getLastName(),
+                clientDto.getTelephone(), new LinkedHashMap<>());
         clientRepository.save(client);
-        ClientDto clientIs = new ClientDto(clientDto.getFirstName(),clientDto.getLastName(),clientDto.getTelephone());
+        ClientDto clientIs = new ClientDto(clientDto.getFirstName(), clientDto.getLastName(), clientDto.getTelephone());
         return clientIs;
     }
+
     @Override
-    public Client showProfileClient(String email){
+    public Client showProfileClient(String email) {
         clientRepository.findById(email).get();
         return clientRepository.findById(email).get();
     }
@@ -69,10 +71,12 @@ public class ClientServiceImpl implements ClientService {
         clientRepository.save(client);
         return clientDto;
     }
-    public String deleteClient(String email){
+
+    public String deleteClient(String email) {
         clientRepository.deleteById(email);
         return "Client is deleted";
     }
+
     @Override
     public boolean login(String auth) {//TODO - razobratsya s exeptions
         AccountUserCredential credentials = accountConfiguration.tokens(auth);
@@ -84,48 +88,47 @@ public class ClientServiceImpl implements ClientService {
 
         return true;
     }
+
     @Override
-    public Record createRecord(String email, String emailProvider, RecordDto recordDto){
+    public Record createRecord(String emailClient, String emailProvider, RecordDto recordDto) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        LocalDateTime dateTimeStart = LocalDateTime.parse(recordDto.getStartService(),formatter);
-        LocalDateTime dateTimeEnd = LocalDateTime.parse(recordDto.getEndService(),formatter);
+        LocalDateTime dateTimeStart = LocalDateTime.parse(recordDto.getStartService(), formatter);
         LocalTime time = dateTimeStart.toLocalTime();
-        LocalDate date=dateTimeStart.toLocalDate();
+        LocalDate date = dateTimeStart.toLocalDate();
         Provider provider = providerRepository.findById(emailProvider).orElse(null);
-        if(provider==null){
+        if (provider == null) {
             throw new UserExistEcxeption("Provider not exist");
         }
 
-        ProviderDto providerDto = providerService.providerToProviderDto(provider);
-        Client client = clientRepository.findById(email).orElse(null);
-        if(client==null){
-            throw new UserExistEcxeption("Client not exist");
-        }
-        ClientDto clientDto = clientToClientDto(client);
-        Record record = new Record(dateTimeStart,dateTimeEnd,recordDto.getService(),recordDto.getComment(),
-                clientDto, providerDto);
+        Client client = clientRepository.findById(emailClient).get();
 
-        LinkedHashMap<LocalDate,DayOfWeek> realSchedule= provider.getRealSchedule();
-        DayOfWeek dayOfWeek=realSchedule.get(date);
-        LinkedHashMap<String, Boolean> timeRecords=dayOfWeek.getTimeRecords();
-        if(timeRecords.get(time.toString())==true){
-            LinkedHashMap<LocalDateTime,Record>records=provider.getRecords();
-            records.put(dateTimeStart,record);
+        Record record = new Record(dateTimeStart.toString(), recordDto.getService(), recordDto.getComment(),
+                emailClient, emailProvider);
+
+        LinkedHashMap<String, DayOfWeek> realSchedule = provider.getRealSchedule();
+//        provider.setRealSchedule(realSchedule);
+//        providerRepository.save(provider);
+        DayOfWeek dayOfWeek = realSchedule.get(date.toString());
+        LinkedHashMap<String, Boolean> timeRecords = dayOfWeek.getTimeRecords();
+
+        if (timeRecords.get(time.toString()) == true) {
+            LinkedHashMap<String, Record> records = provider.getRecords();
+            records.put(dateTimeStart.toString(), record);
             provider.setRecords(records);
 
-            LinkedHashMap<LocalDateTime,Record>clientRecords=client.getRecords();
-            clientRecords.put(dateTimeStart,record);
+            LinkedHashMap<String, Record> clientRecords = client.getRecords();
+            clientRecords.put(dateTimeStart.toString(), record);
             client.setRecords(records);
-            clientRepository.save(client);
             recordRepository.save(record);
 
-
-            timeRecords.put(time.toString(),false);
+            timeRecords.put(time.toString(), false);
             dayOfWeek.setTimeRecords(timeRecords);
-            realSchedule.put(date,dayOfWeek);
+            realSchedule.put(date.toString(), dayOfWeek);
             provider.setRealSchedule(realSchedule);
             providerRepository.save(provider);
-        }else{
+            clientRepository.save(client);
+
+        } else {
             throw new ErrorTimeException("This time is taken");
         }
 
@@ -133,8 +136,174 @@ public class ClientServiceImpl implements ClientService {
 
     }
 
-    public ClientDto clientToClientDto(Client client){
-        ClientDto clientDto = new ClientDto(client.getFirstName(),client.getLastName(),client.getTelephone());
+    @Override
+    public Record updateRecord(String recordId, RecordUpdateDto recordDto) {
+        Record record = recordRepository.findById(recordId).orElse(null);
+        Record newRecord;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-d'T'HH:mm");
+        LocalDateTime newRecordTime = LocalDateTime.parse(recordDto.getStartService(), formatter);
+        LocalDateTime oldRecordTime = LocalDateTime.parse(record.getStartService(), formatter);
+        LocalTime oldTime = oldRecordTime.toLocalTime();
+        LocalDate oldDate = oldRecordTime.toLocalDate();
+        LocalDate date = newRecordTime.toLocalDate();
+        LocalTime time = newRecordTime.toLocalTime();
+        if (newRecordTime.isBefore(LocalDateTime.now())) {
+            throw new ErrorTimeException("Time is not correct");
+        }
+        if (record != null) {
+            newRecord = updateRecordMethod(record, recordDto);
+        } else {
+            throw new RecordExistException("Record not exist");
+        }
+
+        Provider provider = providerRepository.findById(record.getEmailProvider()).get();
+        LinkedHashMap<String, DayOfWeek> realSchedule = provider.getRealSchedule();
+//        provider.setRealSchedule(realSchedule);
+//        providerRepository.save(provider);
+        DayOfWeek dayOfWeek = realSchedule.get(date.toString());
+        DayOfWeek oldDayOfWeek = realSchedule.get(oldDate.toString());
+        LinkedHashMap<String, Boolean> timeRecords = dayOfWeek.getTimeRecords();
+        LinkedHashMap<String, Boolean> oldTimeRecords = oldDayOfWeek.getTimeRecords();
+        if (dayOfWeek.getIsAvailable() == false) {
+            throw new ErrorTimeException("This is not a working day");
+        }
+
+        if (timeRecords.get(time.toString()) == true) {
+            LinkedHashMap<String, Record> records = provider.getRecords();
+            records.remove(provider.findKeyRecord(recordId));
+            records.put(recordDto.getStartService(), newRecord);
+            provider.setRecords(records);
+            timeRecords.put(time.toString(), false);
+            dayOfWeek.setTimeRecords(timeRecords);
+            realSchedule.put(newRecordTime.toString(), dayOfWeek);
+
+            oldTimeRecords.put(oldTime.toString(), true);
+            oldDayOfWeek.setTimeRecords(oldTimeRecords);
+            realSchedule.put(oldRecordTime.toString(), oldDayOfWeek);
+            provider.setRealSchedule(realSchedule);
+            providerRepository.save(provider);
+
+            Client client = clientRepository.findById(record.getEmailClient()).get();
+            LinkedHashMap<String, Record> records2 = client.getRecords();
+            records2.remove(client.findKeyRecord(recordId));
+            records2.put(recordDto.getStartService(), newRecord);
+            client.setRecords(records);
+            clientRepository.save(client);
+        } else {
+            throw new ErrorTimeException("This time is taken");
+
+        }
+        recordRepository.delete(record);
+        recordRepository.save(newRecord);
+        return newRecord;
+    }
+
+    public Record updateRecordMethod(Record record, RecordUpdateDto recordDto) {
+        Record newRecord = new Record();
+        newRecord.setStartService(recordDto.getStartService());
+        newRecord.setComment(recordDto.getComment());
+        newRecord.setEmailClient(record.getEmailClient());
+        newRecord.setEmailProvider(record.getEmailProvider());
+        newRecord.setService(record.getService());
+        newRecord.setId(record.getId());
+        return newRecord;
+    }
+
+    @Override
+    public Record deleteRecord(String recordId) {
+        Record record = recordRepository.findById(recordId).orElse(null);
+        if (record != null) {
+            Client client = clientRepository.findById(record.getEmailClient()).orElse(null);
+            client.deleteRecord(recordId);
+            clientRepository.save(client);
+            Provider provider = providerRepository.findById(record.getEmailProvider()).orElse(null);
+            provider.deleteRecord(recordId);
+            providerRepository.save(provider);
+            recordRepository.deleteById(recordId);
+        }
+        return record;
+
+    }
+
+
+    public ClientDto clientToClientDto(Client client) {
+        ClientDto clientDto = new ClientDto(client.getFirstName(), client.getLastName(), client.getTelephone());
         return clientDto;
+    }
+
+    @Override
+    public Double voteProvider(String email, String emailProvider, Integer vote) {
+        Provider provider = providerRepository.findById(emailProvider).orElse(null);
+        ArrayList<Integer> list = provider.getVote();
+        list.add(vote);
+        Double sum = 0.0;
+        for (int i = 0; i < list.size(); i++) {
+            sum = sum + list.get(i);
+        }
+        System.out.println(sum);
+        Double vote2 = sum / list.size();
+        provider.setVote(list);
+        provider.setAverageVote(vote2);
+        providerRepository.save(provider);
+        return vote2;
+    }
+
+    @Override
+    public Set<String> showAllProvidersForClient(String email) {
+        Client client = clientRepository.findById(email).get();
+        LinkedHashMap<String, Record> records = client.getRecords();
+        HashSet<String> providersSet = new HashSet<>();
+        for (Map.Entry<String, Record> entry : records.entrySet()) {
+            providersSet.add(entry.getValue().getEmailProvider());
+        }
+        return providersSet;
+
+    }
+
+    @Override
+    public Set<Record> showAllrecords(String email) {
+        Client client = clientRepository.findById(email).get();
+        HashSet<Record> onlyRecords = new HashSet<>();
+        LocalDateTime dateNow = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+        LinkedHashMap<String, Record> records = client.getRecords();
+        for (Map.Entry<String, Record> entry : records.entrySet()) {
+            LocalDateTime key = LocalDateTime.parse(entry.getKey(), formatter);
+            if (key.isAfter(dateNow)) {
+                onlyRecords.add(entry.getValue());
+            }
+        }
+        return onlyRecords;
+    }
+
+    @Override
+    public Set<Record> showAllrecordsForDay(String email, String date) {
+        LocalDate dateForm = LocalDate.parse(date);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+        HashSet<Record> recordsSet = new HashSet<>();
+        Client client = clientRepository.findById(email).orElse(null);
+        LinkedHashMap<String, Record> records = client.getRecords();
+        for (Map.Entry<String, Record> entry : records.entrySet()) {
+            LocalDateTime dateTime = LocalDateTime.parse(entry.getKey(), formatter);
+            if (dateTime.toLocalDate().equals(dateForm)) {
+                recordsSet.add(entry.getValue());
+            }
+        }
+        return recordsSet;
+    }
+
+    @Override
+    public Set<Record> showArchiveRecords(String email) {
+        Client client = clientRepository.findById(email).orElse(null);
+        HashSet<Record> onlyRecords = new HashSet<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+        LinkedHashMap<String, Record> records = client.getRecords();
+        for (Map.Entry<String, Record> entry : records.entrySet()) {
+            LocalDateTime key = LocalDateTime.parse(entry.getKey(), formatter);
+            if (key.isBefore(LocalDateTime.now())) {
+                onlyRecords.add(entry.getValue());
+            }
+        }
+        return onlyRecords;
     }
 }

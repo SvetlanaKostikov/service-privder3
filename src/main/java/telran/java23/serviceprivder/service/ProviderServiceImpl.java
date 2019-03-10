@@ -11,11 +11,9 @@ import telran.java23.serviceprivder.dto.ScheduleDto;
 import telran.java23.serviceprivder.exeptions.UserExistEcxeption;
 import telran.java23.serviceprivder.model.*;
 
-
+import java.text.DateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,7 +41,7 @@ public class ProviderServiceImpl implements ProviderService {
         Set<Service> services = newProvider.getServices();
         Provider provider = new Provider(newProvider.getEmail(), newProvider.getPassword(), newProvider.getProfession(),
                 newProvider.getFirstName(), newProvider.getLastName(), newProvider.getTelephone(), newProvider.getWhatsApp(),
-                newProvider.getAddress(), true, services, null,null,null,null,null);
+                newProvider.getAddress(), true, services, new LinkedHashMap<>(),null,null, new ArrayList<>(),0.0);
         providerRepository.save(provider);
         return providerToProviderDto(provider);
     }
@@ -72,35 +70,33 @@ public class ProviderServiceImpl implements ProviderService {
             providerRepository.save(provider);
             return scheduleIs;
         }
+    @Override
+    public Schedule updateSchedule(String email, ScheduleDto schedule) {
+        DayOfWeek sunday = convertToDayOfWeek(schedule.getSunday());
+        DayOfWeek monday = convertToDayOfWeek(schedule.getMonday());
+        DayOfWeek tuesday = convertToDayOfWeek(schedule.getTuesday());
+        DayOfWeek wednesday = convertToDayOfWeek(schedule.getWednesday());
+        DayOfWeek thursday = convertToDayOfWeek(schedule.getThursday());
+        DayOfWeek friday = convertToDayOfWeek(schedule.getFriday());
+        DayOfWeek saturday = convertToDayOfWeek(schedule.getSaturday());
+        Schedule scheduleIs = new Schedule(sunday, monday, tuesday, wednesday, thursday, friday, saturday);
+        Provider provider = providerRepository.findById(email).get();
+        provider.setSchedule(scheduleIs);
+        providerRepository.save(provider);
+        provider.twoWeeksSchedule();
+        providerRepository.save(provider);
+        return scheduleIs;
+    }
+
 
 
     public DayOfWeek convertToDayOfWeek(DayOfWeekDto dayOfWeekDto) {
-        if(dayOfWeekDto==null){
+        if(dayOfWeekDto==null) {
             return null;
         }
-        LocalTime dateTimeStart;
-        LocalTime dateTimeEnd;
-        LocalTime breakStart;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
 
-        if(dayOfWeekDto.getStartDay()==null){
-            dateTimeStart=null;
-        }else {
-            dateTimeStart = LocalTime.parse(dayOfWeekDto.getStartDay(), formatter);
-        };
-        if(dayOfWeekDto.getEndDay()==null){
-            dateTimeEnd=null;
-        }else {
-            dateTimeEnd = LocalTime.parse(dayOfWeekDto.getEndDay(), formatter);
-        };
-        if(dayOfWeekDto.getBreakStart()==null){
-            breakStart=null;
-        }else {
-            breakStart = LocalTime.parse(dayOfWeekDto.getBreakStart(), formatter);
-        };
-
-        DayOfWeek day = new DayOfWeek(dayOfWeekDto.getName(),dayOfWeekDto.getIsAvailable(),dateTimeStart, dateTimeEnd,
-                dayOfWeekDto.getBreakeInMinute(), breakStart, null);
+        DayOfWeek day = new DayOfWeek(dayOfWeekDto.getName(),dayOfWeekDto.getIsAvailable(),dayOfWeekDto.getStartDay(), dayOfWeekDto.getEndDay(),
+                dayOfWeekDto.getBreakeInMinute(), dayOfWeekDto.getBreakStart());
         return day;
     }
 
@@ -139,19 +135,21 @@ public class ProviderServiceImpl implements ProviderService {
 
     ProviderDto providerToProviderDto(Provider provider) {
         ProviderDto providerDto = new ProviderDto(provider.getProfession(),provider.getFirstName(),provider.getLastName(),
-                provider.getTelephone(),provider.getWhatsApp(),provider.getAddress(),provider.getIsActive(),provider.getServices(),provider.getVote());
+                provider.getTelephone(),provider.getWhatsApp(),provider.getAddress(),provider.getIsActive(),provider.getServices(),
+                provider.getAverageVote());
         return providerDto;
     }
 
-//    @Override
-//    public Schedule deleteSchedule(String email) {
-//        Provider provider = providerRepository.findById(email).get();
-//        HashSet<DayOfWeek>days = new HashSet<>();
-//        Schedule schedule = new Schedule(days);
-//        provider.setSchedule(schedule);
-//        providerRepository.save(provider);
-//        return schedule;
-//    }
+    @Override
+    public Schedule deleteSchedule(String email) {
+        DayOfWeek dayOfWeek=new DayOfWeek(null,false,null,null,0,null);
+        Schedule schedule = new Schedule(dayOfWeek,dayOfWeek,dayOfWeek,dayOfWeek,dayOfWeek,dayOfWeek,dayOfWeek);
+        Provider provider = providerRepository.findById(email).orElse(null);
+        provider.setSchedule(schedule);
+        providerRepository.save(provider);
+        return provider.getSchedule();
+    }
+
     @Override
     public Set<Provider> showAllProviders(){
         return providerRepository.findAll().stream().collect(Collectors.toSet());
@@ -163,11 +161,67 @@ public class ProviderServiceImpl implements ProviderService {
         return provider.getSchedule();
     }
     @Override
-    public Map<LocalDate,DayOfWeek> showRealSchedule(String email){
+    public Map<String,DayOfWeek> showRealSchedule(String email){
         Provider provider=providerRepository.findById(email).get();
         return  provider.getRealSchedule();
 
     }
+    @Override
+    public Set<String> showAllClientsForProvider(String email){
+        Provider provider = providerRepository.findById(email).get();
+        LinkedHashMap<String,Record>records=provider.getRecords();
+        HashSet<String> clientsSet=new HashSet<>();
+        for (Map.Entry<String, Record> entry : records.entrySet()) {
+            clientsSet.add(entry.getValue().getEmailClient());
+        }
+        return clientsSet;
+
+    }
+    @Override
+    public Set<Record>showAllrecordsForDay(String email,String date){
+        LocalDate dateForm = LocalDate.parse(date);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+        HashSet<Record> recordsSet=new HashSet<>();
+        Provider provider = providerRepository.findById(email).orElse(null);
+        LinkedHashMap<String,Record>records=provider.getRecords();
+        for (Map.Entry<String, Record> entry : records.entrySet()) {
+            LocalDateTime dateTime = LocalDateTime.parse(entry.getKey(), formatter);
+            if(dateTime.toLocalDate().equals(dateForm)){
+                recordsSet.add(entry.getValue());
+            }
+        }
+        return recordsSet;
+    }
+    @Override
+    public Set<Record> showArchiveRecords(String email){
+        Provider provider=providerRepository.findById(email).get();
+        HashSet<Record> onlyRecords=new HashSet<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+        LinkedHashMap<String,Record>records=provider.getRecords();
+        for (Map.Entry<String, Record> entry : records.entrySet()) {
+            LocalDateTime key = LocalDateTime.parse(entry.getKey(), formatter);
+            if(key.isBefore(LocalDateTime.now())){
+                onlyRecords.add(entry.getValue());
+            }
+        }
+        return onlyRecords;
+    }
+    @Override
+    public Set<Record> showAllrecords(String email) {
+        Provider provider=providerRepository.findById(email).get();
+        HashSet<Record> onlyRecords = new HashSet<>();
+        LocalDateTime dateNow = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+        LinkedHashMap<String, Record> records = provider.getRecords();
+        for (Map.Entry<String, Record> entry : records.entrySet()) {
+            LocalDateTime key = LocalDateTime.parse(entry.getKey(), formatter);
+            if (key.isAfter(dateNow)) {
+                onlyRecords.add(entry.getValue());
+            }
+        }
+        return onlyRecords;
+    }
+
 
 
 

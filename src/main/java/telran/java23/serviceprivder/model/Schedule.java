@@ -26,7 +26,7 @@ public class Schedule {
     public DayOfWeek findDay(String name) {
         DayOfWeek[] days = {sunday, monday, tuesday, wednesday, thursday, friday, saturday};
         for (int i = 0; i < days.length; i++) {
-            if (days[i].getName().equalsIgnoreCase(name)) {
+            if (days[i].getName()!=null && days[i].getName().equalsIgnoreCase(name)) {
                 return days[i];
             }
         }

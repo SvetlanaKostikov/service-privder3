@@ -8,11 +8,9 @@ import telran.java23.serviceprivder.dto.ProviderRegisterDto;
 import telran.java23.serviceprivder.dto.ScheduleDto;
 import telran.java23.serviceprivder.model.DayOfWeek;
 import telran.java23.serviceprivder.model.Provider;
+import telran.java23.serviceprivder.model.Record;
 import telran.java23.serviceprivder.model.Schedule;
 import telran.java23.serviceprivder.service.ProviderService;
-
-import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,9 +31,14 @@ public class ProviderController {
     public String deleteProvider(@PathVariable String email){
         return providerService.deleteProvider(email);
     }
+
     @PostMapping("/schedule/{email}")
     public Schedule createSchedule(@PathVariable String email, @RequestBody ScheduleDto scheduleDto){
         return providerService.createSchedule(email,scheduleDto);
+    }
+    @PostMapping("/updateschedule/{email}")
+    public Schedule updateSchedule(@PathVariable String email, @RequestBody ScheduleDto schedule){
+        return providerService.updateSchedule(email,schedule);
     }
     @PutMapping("/update/{email}")
     public ProviderDto updateProvider(@PathVariable String email,@RequestBody ProviderDto provider){
@@ -50,23 +53,41 @@ public class ProviderController {
     public ProviderDto showProfileProvider(@PathVariable String email){
         return providerService.showProfileProvider(email);
     }
-//    @DeleteMapping("/schedule/{email}")
-//    public Schedule deleteSchedule(@PathVariable String email){
-//        return providerService.deleteSchedule(email);
-//    }
     @GetMapping("/providers")
     public Set<Provider> showAllProviders(){
         return providerService.showAllProviders();
     }
+
     @GetMapping("/schedule/{email}")
     public Schedule showSchedule(@PathVariable String email){
         return providerService.showSchedule(email);
     }
+
     @GetMapping("/realschedule/{email}")
-    public Map<LocalDate, DayOfWeek> showRealSchedule(@PathVariable String email){
+    public Map<String, DayOfWeek> showRealSchedule(@PathVariable String email){
         return providerService.showRealSchedule(email);
     }
+    @DeleteMapping("/schedule/{email}")
+    public Schedule deleteSchedule(@PathVariable String email) {
+        return providerService.deleteSchedule(email);
+    }
 
+    @GetMapping("/showclients/{email}")
+    public Set<String> showAllClientsForProvider(@PathVariable String email){
+        return providerService.showAllClientsForProvider(email);
+    }
+    @GetMapping("/showrecords/{email}/{date}")
+    public Set<Record>showAllrecordsForDay(@PathVariable String email,@PathVariable String date){
+        return providerService.showAllrecordsForDay(email,date);
+    }
+    @GetMapping("/archiverecords/{email}/")
+    public Set<Record> showArchiveRecords(@PathVariable String email){
+        return providerService.showArchiveRecords(email);
+    }
+    @GetMapping("/showrecords/{email}")
+    public Set<Record>showAllrecords(@PathVariable String email){
+        return providerService.showAllrecords(email);
+    }
 
 }
 

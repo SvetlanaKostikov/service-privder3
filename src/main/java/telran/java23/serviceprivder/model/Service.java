@@ -13,5 +13,6 @@ public class Service {
     String name;
     String description;
     Double price;
+    //60 minut strogo
     Integer	durationInMinutes;
 }

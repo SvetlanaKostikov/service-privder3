@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class RecordDto {
     String startService;
-    String endService;
     Service	service;
     String	comment;
 }

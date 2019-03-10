@@ -17,20 +17,19 @@ import java.time.ZonedDateTime;
 public class Record {
     @Id
     String id;
-    LocalDateTime startService;
-    LocalDateTime endService;
+  //  LocalDateTime
+    String startService;
     Service service;
     String	comment;
-    ClientDto client;
-    ProviderDto provider;
+    String emailClient;
+    String emailProvider;
 
 
- public Record(LocalDateTime startService, LocalDateTime endService, Service service, String comment, ClientDto client, ProviderDto provider) {
+ public Record(String startService, Service service, String comment, String emailClient, String emailProvider) {
   this.startService = startService;
-  this.endService = endService;
   this.service = service;
   this.comment = comment;
-  this.client = client;
-  this.provider = provider;
+  this.emailClient = emailClient;
+  this.emailProvider = emailProvider;
  }
 }
