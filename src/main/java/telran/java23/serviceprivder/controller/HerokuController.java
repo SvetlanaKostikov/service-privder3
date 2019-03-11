@@ -13,6 +13,7 @@ public class HerokuController {
 
     @GetMapping
     public String helloHeroku(){
+
         return "<h1>ScheduleService</h1>\n" +
                 "<h4>v.1.1 from 01.03.2019</h4>\n" +
                 "<a href=\"https://pacific-sierra-61961.herokuapp.com/swagger-ui.html#/\"><h2>Welcome to Swagger...</h2></a>" +
