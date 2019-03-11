@@ -6,10 +6,7 @@ import telran.java23.serviceprivder.dao.ProviderRepository;
 import telran.java23.serviceprivder.dto.ProviderDto;
 import telran.java23.serviceprivder.dto.ProviderRegisterDto;
 import telran.java23.serviceprivder.dto.ScheduleDto;
-import telran.java23.serviceprivder.model.DayOfWeek;
-import telran.java23.serviceprivder.model.Provider;
-import telran.java23.serviceprivder.model.Record;
-import telran.java23.serviceprivder.model.Schedule;
+import telran.java23.serviceprivder.model.*;
 import telran.java23.serviceprivder.service.ProviderService;
 import java.util.Map;
 import java.util.Set;
@@ -64,7 +61,7 @@ public class ProviderController {
     }
 
     @GetMapping("/realschedule/{email}")
-    public Map<String, DayOfWeek> showRealSchedule(@PathVariable String email){
+    public Map<String, DayOfWeekReal> showRealSchedule(@PathVariable String email){
         return providerService.showRealSchedule(email);
     }
     @DeleteMapping("/schedule/{email}")

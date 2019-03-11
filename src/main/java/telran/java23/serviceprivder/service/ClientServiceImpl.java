@@ -105,11 +105,9 @@ public class ClientServiceImpl implements ClientService {
         Record record = new Record(dateTimeStart.toString(), recordDto.getService(), recordDto.getComment(),
                 emailClient, emailProvider);
 
-        LinkedHashMap<String, DayOfWeek> realSchedule = provider.getRealSchedule();
-//        provider.setRealSchedule(realSchedule);
-//        providerRepository.save(provider);
-        DayOfWeek dayOfWeek = realSchedule.get(date.toString());
-        LinkedHashMap<String, Boolean> timeRecords = dayOfWeek.getTimeRecords();
+        LinkedHashMap<String, DayOfWeekReal> realSchedule = provider.getRealSchedule();
+        DayOfWeekReal dayOfWeekReal = realSchedule.get(date.toString());
+        LinkedHashMap<String, Boolean> timeRecords = dayOfWeekReal.getRealTimeRecords();
 
         if (timeRecords.get(time.toString()) == true) {
             LinkedHashMap<String, Record> records = provider.getRecords();
@@ -122,8 +120,8 @@ public class ClientServiceImpl implements ClientService {
             recordRepository.save(record);
 
             timeRecords.put(time.toString(), false);
-            dayOfWeek.setTimeRecords(timeRecords);
-            realSchedule.put(date.toString(), dayOfWeek);
+            dayOfWeekReal.setRealTimeRecords(timeRecords);
+            realSchedule.put(date.toString(), dayOfWeekReal);
             provider.setRealSchedule(realSchedule);
             providerRepository.save(provider);
             clientRepository.save(client);
@@ -157,13 +155,11 @@ public class ClientServiceImpl implements ClientService {
         }
 
         Provider provider = providerRepository.findById(record.getEmailProvider()).get();
-        LinkedHashMap<String, DayOfWeek> realSchedule = provider.getRealSchedule();
-//        provider.setRealSchedule(realSchedule);
-//        providerRepository.save(provider);
-        DayOfWeek dayOfWeek = realSchedule.get(date.toString());
-        DayOfWeek oldDayOfWeek = realSchedule.get(oldDate.toString());
-        LinkedHashMap<String, Boolean> timeRecords = dayOfWeek.getTimeRecords();
-        LinkedHashMap<String, Boolean> oldTimeRecords = oldDayOfWeek.getTimeRecords();
+        LinkedHashMap<String, DayOfWeekReal> realSchedule = provider.getRealSchedule();
+        DayOfWeekReal dayOfWeek = realSchedule.get(date.toString());
+        DayOfWeekReal oldDayOfWeek = realSchedule.get(oldDate.toString());
+        LinkedHashMap<String, Boolean> timeRecords = dayOfWeek.getRealTimeRecords();
+        LinkedHashMap<String, Boolean> oldTimeRecords = oldDayOfWeek.getRealTimeRecords();
         if (dayOfWeek.getIsAvailable() == false) {
             throw new ErrorTimeException("This is not a working day");
         }
@@ -174,11 +170,11 @@ public class ClientServiceImpl implements ClientService {
             records.put(recordDto.getStartService(), newRecord);
             provider.setRecords(records);
             timeRecords.put(time.toString(), false);
-            dayOfWeek.setTimeRecords(timeRecords);
+            dayOfWeek.setRealTimeRecords(timeRecords);
             realSchedule.put(newRecordTime.toString(), dayOfWeek);
 
             oldTimeRecords.put(oldTime.toString(), true);
-            oldDayOfWeek.setTimeRecords(oldTimeRecords);
+            oldDayOfWeek.setRealTimeRecords(oldTimeRecords);
             realSchedule.put(oldRecordTime.toString(), oldDayOfWeek);
             provider.setRealSchedule(realSchedule);
             providerRepository.save(provider);

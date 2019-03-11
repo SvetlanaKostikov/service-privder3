@@ -161,7 +161,7 @@ public class ProviderServiceImpl implements ProviderService {
         return provider.getSchedule();
     }
     @Override
-    public Map<String,DayOfWeek> showRealSchedule(String email){
+    public Map<String,DayOfWeekReal> showRealSchedule(String email){
         Provider provider=providerRepository.findById(email).get();
         return  provider.getRealSchedule();
 

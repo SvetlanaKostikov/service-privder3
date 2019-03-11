@@ -3,10 +3,7 @@ package telran.java23.serviceprivder.service;
 import telran.java23.serviceprivder.dto.ProviderDto;
 import telran.java23.serviceprivder.dto.ProviderRegisterDto;
 import telran.java23.serviceprivder.dto.ScheduleDto;
-import telran.java23.serviceprivder.model.DayOfWeek;
-import telran.java23.serviceprivder.model.Provider;
-import telran.java23.serviceprivder.model.Record;
-import telran.java23.serviceprivder.model.Schedule;
+import telran.java23.serviceprivder.model.*;
 
 import java.util.Map;
 import java.util.Set;
@@ -21,7 +18,7 @@ public interface ProviderService {
     public Schedule deleteSchedule(String email);
     public Set<Provider> showAllProviders();
     public Schedule showSchedule(String email);
-    public Map<String, DayOfWeek> showRealSchedule(String email);
+    public Map<String, DayOfWeekReal> showRealSchedule(String email);
     public Set<String> showAllClientsForProvider(String email);
     public Schedule updateSchedule(String email, ScheduleDto schedule);
     public Set<Record>showAllrecordsForDay(String email, String date);

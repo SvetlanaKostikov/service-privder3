@@ -12,7 +12,7 @@ import java.util.*;
 @Setter
 @NoArgsConstructor
 
-public class DayOfWeek {
+public class DayOfWeek implements Cloneable{
     String name;
     Boolean isAvailable;
     //LocalTime
@@ -65,6 +65,7 @@ public class DayOfWeek {
 
 
     }
+
 }
 
 

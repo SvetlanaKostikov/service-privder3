@@ -30,57 +30,31 @@ public class Provider {
     Set<Service> services;
     //String - eto LocalDateTime
     LinkedHashMap<String, Record> records;
+
     Schedule schedule;
     //String - eto LocalDate
-    LinkedHashMap<String, DayOfWeek> realSchedule;
+    LinkedHashMap<String, DayOfWeekReal> realSchedule;
     ArrayList<Integer> vote;
     Double averageVote;
 
 
-    //    public LinkedHashMap<String, DayOfWeek> twoWeeksSchedule() {
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-//        LocalDate dateNow = LocalDate.now();
-//        realSchedule = new LinkedHashMap<>();
-//        Locale locale = Locale.getDefault();
-//        for (int i = 0; i < 13; i++) {
-//            LocalDate date = dateNow.plusDays(i);
-//            realSchedule.put(date.toString(), schedule.findDay(date.getDayOfWeek().getDisplayName(TextStyle.FULL, locale)));
-//            for (String key : records.keySet()) {
-//                LocalDateTime keyParse = LocalDateTime.parse(key, formatter);
-//                if (date.equals(keyParse.toLocalDate())) {
-//                    DayOfWeek dayOfWeek = schedule.findDay(date.getDayOfWeek().getDisplayName(TextStyle.FULL, locale));
-//                    LinkedHashMap<String, Boolean> timeRecords = dayOfWeek.getTimeRecords();
-//                    timeRecords.put(keyParse.toLocalTime().toString(), false);
-//                    dayOfWeek.setTimeRecords(timeRecords);
-//                    realSchedule.put(date.toString(), dayOfWeek);
-//                } else {
-//                    realSchedule.put(date.toString(), schedule.findDay(date.getDayOfWeek().getDisplayName(TextStyle.FULL, locale)));
-//                }
-//            }
-//
-//        }
-//
-//
-//        return realSchedule;
-//    }
-    public LinkedHashMap<String, DayOfWeek> twoWeeksSchedule() {
+    public LinkedHashMap<String, DayOfWeekReal> twoWeeksSchedule() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
         LocalDate dateNow = LocalDate.now();
         realSchedule = new LinkedHashMap<>();
-        Locale locale = Locale.getDefault();
         for (int i = 0; i < 13; i++) {
             LocalDate date = dateNow.plusDays(i);
-            realSchedule.put(date.toString(), schedule.findDay(date.getDayOfWeek().getDisplayName(TextStyle.FULL, locale)));
+            realSchedule.put(date.toString(), new DayOfWeekReal(schedule.findDay(date.getDayOfWeek().name())));
 
         }
         for (String key : records.keySet()) {
             LocalDateTime keyParse = LocalDateTime.parse(key, formatter);
             if (keyParse.isAfter(LocalDateTime.now())) {
-                DayOfWeek dayOfWeek = realSchedule.get(keyParse.toLocalDate().toString());
-                LinkedHashMap<String, Boolean> timeRecords = dayOfWeek.getTimeRecords();
+                DayOfWeekReal dayOfWeekReal = realSchedule.get(keyParse.toLocalDate().toString());
+                LinkedHashMap<String, Boolean> timeRecords = dayOfWeekReal.getRealTimeRecords();
                 timeRecords.put(keyParse.toLocalTime().toString(), false);
-                dayOfWeek.setTimeRecords(timeRecords);
-                realSchedule.put(keyParse.toString(), dayOfWeek);
+                dayOfWeekReal.setRealTimeRecords(timeRecords);
+                realSchedule.put(keyParse.toString(), dayOfWeekReal);
             }
         }
         return realSchedule;
@@ -155,7 +129,7 @@ public class Provider {
         return schedule;
     }
 
-    public LinkedHashMap<String, DayOfWeek> getRealSchedule() {
+    public LinkedHashMap<String, DayOfWeekReal> getRealSchedule() {
         return twoWeeksSchedule();
     }
 
