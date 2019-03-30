@@ -109,7 +109,7 @@ public class ClientServiceImpl implements ClientService {
         DayOfWeekReal dayOfWeekReal = realSchedule.get(date.toString());
         LinkedHashMap<String, Boolean> timeRecords = dayOfWeekReal.getRealTimeRecords();
 
-        if (timeRecords.get(time.toString()) == true) {
+        if (timeRecords.get(time.toString())) {
             LinkedHashMap<String, Record> records = provider.getRecords();
             records.put(dateTimeStart.toString(), record);
             provider.setRecords(records);
@@ -164,7 +164,7 @@ public class ClientServiceImpl implements ClientService {
             throw new ErrorTimeException("This is not a working day");
         }
 
-        if (timeRecords.get(time.toString()) == true) {
+        if (timeRecords.get(time.toString())) {
             LinkedHashMap<String, Record> records = provider.getRecords();
             records.remove(provider.findKeyRecord(recordId));
             records.put(recordDto.getStartService(), newRecord);
@@ -210,12 +210,16 @@ public class ClientServiceImpl implements ClientService {
         Record record = recordRepository.findById(recordId).orElse(null);
         if (record != null) {
             Client client = clientRepository.findById(record.getEmailClient()).orElse(null);
-            client.deleteRecord(recordId);
-            clientRepository.save(client);
+            if(client!=null) {
+                client.deleteRecord(recordId);
+                clientRepository.save(client);
+            }
             Provider provider = providerRepository.findById(record.getEmailProvider()).orElse(null);
-            provider.deleteRecord(recordId);
-            providerRepository.save(provider);
-            recordRepository.deleteById(recordId);
+            if(provider!=null) {
+                provider.deleteRecord(recordId);
+                providerRepository.save(provider);
+                recordRepository.deleteById(recordId);
+            }
         }
         return record;
 
@@ -223,8 +227,7 @@ public class ClientServiceImpl implements ClientService {
 
 
     public ClientDto clientToClientDto(Client client) {
-        ClientDto clientDto = new ClientDto(client.getFirstName(), client.getLastName(), client.getTelephone());
-        return clientDto;
+        return new ClientDto(client.getFirstName(), client.getLastName(), client.getTelephone());
     }
 
     @Override

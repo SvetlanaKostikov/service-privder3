@@ -55,23 +55,16 @@ public class ProviderServiceImpl implements ProviderService {
 
     @Override
     public Schedule createSchedule(String email, ScheduleDto schedule) {
-            DayOfWeek sunday = convertToDayOfWeek(schedule.getSunday());
-            DayOfWeek monday = convertToDayOfWeek(schedule.getMonday());
-            DayOfWeek tuesday = convertToDayOfWeek(schedule.getTuesday());
-            DayOfWeek wednesday = convertToDayOfWeek(schedule.getWednesday());
-            DayOfWeek thursday = convertToDayOfWeek(schedule.getThursday());
-            DayOfWeek friday = convertToDayOfWeek(schedule.getFriday());
-            DayOfWeek saturday = convertToDayOfWeek(schedule.getSaturday());
-            Schedule scheduleIs = new Schedule(sunday, monday, tuesday, wednesday, thursday, friday, saturday);
-            Provider provider = providerRepository.findById(email).get();
-            provider.setSchedule(scheduleIs);
-            providerRepository.save(provider);
-            provider.twoWeeksSchedule();
-            providerRepository.save(provider);
-            return scheduleIs;
+        return schedule(email,schedule);
         }
+
     @Override
     public Schedule updateSchedule(String email, ScheduleDto schedule) {
+        return schedule(email,schedule);
+
+    }
+
+    private Schedule schedule(String email, ScheduleDto schedule){
         DayOfWeek sunday = convertToDayOfWeek(schedule.getSunday());
         DayOfWeek monday = convertToDayOfWeek(schedule.getMonday());
         DayOfWeek tuesday = convertToDayOfWeek(schedule.getTuesday());
@@ -90,7 +83,7 @@ public class ProviderServiceImpl implements ProviderService {
 
 
 
-    public DayOfWeek convertToDayOfWeek(DayOfWeekDto dayOfWeekDto) {
+    private DayOfWeek convertToDayOfWeek(DayOfWeekDto dayOfWeekDto) {
         if(dayOfWeekDto==null) {
             return null;
         }
@@ -120,11 +113,7 @@ public class ProviderServiceImpl implements ProviderService {
         AccountUserCredential credentials = accountConfiguration.tokens(auth);
         Provider provider = providerRepository.findById(credentials.getLogin()).get();
         String hashPassword = credentials.getPassword();
-        if(!hashPassword.equals(provider.getPassword())){
-            return false;
-        }
-
-        return true;
+        return hashPassword.equals(provider.getPassword());
 
     }
     @Override
@@ -134,10 +123,9 @@ public class ProviderServiceImpl implements ProviderService {
     }
 
     ProviderDto providerToProviderDto(Provider provider) {
-        ProviderDto providerDto = new ProviderDto(provider.getProfession(),provider.getFirstName(),provider.getLastName(),
+        return new ProviderDto(provider.getProfession(),provider.getFirstName(),provider.getLastName(),
                 provider.getTelephone(),provider.getWhatsApp(),provider.getAddress(),provider.getIsActive(),provider.getServices(),
                 provider.getAverageVote());
-        return providerDto;
     }
 
     @Override
