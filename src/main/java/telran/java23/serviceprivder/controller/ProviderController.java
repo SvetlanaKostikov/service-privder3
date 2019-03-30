@@ -83,7 +83,7 @@ public class ProviderController {
     }
     @GetMapping("/showrecords/{email}")
     public Set<Record>showAllrecords(@PathVariable String email){
-        return providerService.showAllrecords(email);
+        return providerService.showAllrecordsFromNow(email);
     }
 
 }

@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ClientServiceImpl implements ClientService {
@@ -36,6 +37,8 @@ public class ClientServiceImpl implements ClientService {
     @Autowired
     RecordRepository recordRepository;
 
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+
 //    @Autowired
 //    PasswordEncoder encoder;
 
@@ -50,7 +53,7 @@ public class ClientServiceImpl implements ClientService {
         }
 //        String hashPassword = encoder.encode(clientDto.getPassword());
         Client client = new Client(clientDto.getEmail(), clientDto.getPassword(), clientDto.getFirstName(), clientDto.getLastName(),
-                clientDto.getTelephone(), new LinkedHashMap<>());
+                clientDto.getTelephone());
         clientRepository.save(client);
         ClientDto clientIs = new ClientDto(clientDto.getFirstName(), clientDto.getLastName(), clientDto.getTelephone());
         return clientIs;
@@ -78,7 +81,7 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
-    public boolean login(String auth) {//TODO - razobratsya s exeptions
+    public boolean login(String auth) {
         AccountUserCredential credentials = accountConfiguration.tokens(auth);
         Client client = clientRepository.findById(credentials.getLogin()).get();
         String hashPassword = credentials.getPassword();
@@ -109,15 +112,10 @@ public class ClientServiceImpl implements ClientService {
         DayOfWeekReal dayOfWeekReal = realSchedule.get(date.toString());
         LinkedHashMap<String, Boolean> timeRecords = dayOfWeekReal.getRealTimeRecords();
 
-        if (timeRecords.get(time.toString())) {
+        if (timeRecords.get(time.toString()) == true) {
             LinkedHashMap<String, Record> records = provider.getRecords();
             records.put(dateTimeStart.toString(), record);
             provider.setRecords(records);
-
-            LinkedHashMap<String, Record> clientRecords = client.getRecords();
-            clientRecords.put(dateTimeStart.toString(), record);
-            client.setRecords(records);
-            recordRepository.save(record);
 
             timeRecords.put(time.toString(), false);
             dayOfWeekReal.setRealTimeRecords(timeRecords);
@@ -178,13 +176,6 @@ public class ClientServiceImpl implements ClientService {
             realSchedule.put(oldRecordTime.toString(), oldDayOfWeek);
             provider.setRealSchedule(realSchedule);
             providerRepository.save(provider);
-
-            Client client = clientRepository.findById(record.getEmailClient()).get();
-            LinkedHashMap<String, Record> records2 = client.getRecords();
-            records2.remove(client.findKeyRecord(recordId));
-            records2.put(recordDto.getStartService(), newRecord);
-            client.setRecords(records);
-            clientRepository.save(client);
         } else {
             throw new ErrorTimeException("This time is taken");
 
@@ -208,19 +199,12 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public Record deleteRecord(String recordId) {
         Record record = recordRepository.findById(recordId).orElse(null);
-        if (record != null) {
-            Client client = clientRepository.findById(record.getEmailClient()).orElse(null);
-            if(client!=null) {
-                client.deleteRecord(recordId);
-                clientRepository.save(client);
-            }
             Provider provider = providerRepository.findById(record.getEmailProvider()).orElse(null);
-            if(provider!=null) {
+            if (provider != null) {
                 provider.deleteRecord(recordId);
                 providerRepository.save(provider);
                 recordRepository.deleteById(recordId);
             }
-        }
         return record;
 
     }
@@ -249,43 +233,28 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public Set<String> showAllProvidersForClient(String email) {
-        Client client = clientRepository.findById(email).get();
-        LinkedHashMap<String, Record> records = client.getRecords();
-        HashSet<String> providersSet = new HashSet<>();
-        for (Map.Entry<String, Record> entry : records.entrySet()) {
-            providersSet.add(entry.getValue().getEmailProvider());
-        }
-        return providersSet;
+        return recordRepository.findAll().stream().filter((p) -> p.getEmailClient().equals(email)).map((p) -> p.getEmailProvider())
+                .collect(Collectors.toSet());
 
     }
 
     @Override
     public Set<Record> showAllrecords(String email) {
-        Client client = clientRepository.findById(email).get();
-        HashSet<Record> onlyRecords = new HashSet<>();
-        LocalDateTime dateNow = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-        LinkedHashMap<String, Record> records = client.getRecords();
-        for (Map.Entry<String, Record> entry : records.entrySet()) {
-            LocalDateTime key = LocalDateTime.parse(entry.getKey(), formatter);
-            if (key.isAfter(dateNow)) {
-                onlyRecords.add(entry.getValue());
-            }
-        }
-        return onlyRecords;
+        return recordRepository.findAll().stream().filter((p) -> p.getEmailClient().equals(email))
+                .filter((p) -> LocalDateTime.parse(p.getStartService(), formatter).isAfter(LocalDateTime.now()))
+                .collect(Collectors.toSet());
     }
 
     @Override
     public Set<Record> showAllrecordsForDay(String email, String date) {
         LocalDate dateForm = LocalDate.parse(date);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
         HashSet<Record> recordsSet = new HashSet<>();
-        Client client = clientRepository.findById(email).orElse(null);
-        LinkedHashMap<String, Record> records = client.getRecords();
-        for (Map.Entry<String, Record> entry : records.entrySet()) {
-            LocalDateTime dateTime = LocalDateTime.parse(entry.getKey(), formatter);
+        Set<Record> records = recordRepository.findAll().stream().filter((p) -> p.getEmailClient().equals(email))
+                .collect(Collectors.toSet());
+        for (Record record : records) {
+            LocalDateTime dateTime = LocalDateTime.parse(record.getStartService(), formatter);
             if (dateTime.toLocalDate().equals(dateForm)) {
-                recordsSet.add(entry.getValue());
+                recordsSet.add(record);
             }
         }
         return recordsSet;
@@ -293,16 +262,9 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public Set<Record> showArchiveRecords(String email) {
-        Client client = clientRepository.findById(email).orElse(null);
-        HashSet<Record> onlyRecords = new HashSet<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-        LinkedHashMap<String, Record> records = client.getRecords();
-        for (Map.Entry<String, Record> entry : records.entrySet()) {
-            LocalDateTime key = LocalDateTime.parse(entry.getKey(), formatter);
-            if (key.isBefore(LocalDateTime.now())) {
-                onlyRecords.add(entry.getValue());
-            }
-        }
-        return onlyRecords;
+        return recordRepository.findAll().stream().filter((p) -> p.getEmailClient().equals(email))
+                .filter((p) -> LocalDateTime.parse(p.getStartService(), formatter).isBefore(LocalDateTime.now()))
+                .collect(Collectors.toSet());
     }
 }
+

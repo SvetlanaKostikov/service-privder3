@@ -23,7 +23,7 @@ public interface ProviderService {
     public Schedule updateSchedule(String email, ScheduleDto schedule);
     public Set<Record>showAllrecordsForDay(String email, String date);
     public Set<Record> showArchiveRecords(String email);
-    public Set<Record> showAllrecords(String email);
+    public Set<Record> showAllrecordsFromNow(String email);
 
 
 }

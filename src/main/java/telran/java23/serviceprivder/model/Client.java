@@ -24,28 +24,6 @@ public class Client {
     String lastName;
     Long telephone;
     //String - eto LocalDateTime
-    LinkedHashMap<String,Record> records;
-
-    public Record findRecord(String id){
-        for (Map.Entry<String, Record> entry : records.entrySet()) {
-           if(entry.getValue().getId().equals(id)){
-               return entry.getValue();
-            }
-        }
-        return null;
-    }
-
-    public String findKeyRecord(String id){
-        for (Map.Entry<String, Record> entry : records.entrySet()) {
-            if(entry.getValue().getId().equals(id)){
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    public void deleteRecord(String id){
-        records.remove(findKeyRecord(id));
-    }
+   // LinkedHashMap<String,Record> records;
 
 }

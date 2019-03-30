@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.security.crypto.password.PasswordEncoder;
 import telran.java23.serviceprivder.configuration.AccountConfiguration;
 import telran.java23.serviceprivder.dao.ProviderRepository;
+import telran.java23.serviceprivder.dao.RecordRepository;
 import telran.java23.serviceprivder.dto.DayOfWeekDto;
 import telran.java23.serviceprivder.dto.ProviderDto;
 import telran.java23.serviceprivder.dto.ProviderRegisterDto;
@@ -21,8 +22,14 @@ import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
 public class ProviderServiceImpl implements ProviderService {
+
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+
     @Autowired
     ProviderRepository providerRepository;
+
+    @Autowired
+    RecordRepository recordRepository;
 
 //    @Autowired
 //    PasswordEncoder encoder;
@@ -41,7 +48,7 @@ public class ProviderServiceImpl implements ProviderService {
         Set<Service> services = newProvider.getServices();
         Provider provider = new Provider(newProvider.getEmail(), newProvider.getPassword(), newProvider.getProfession(),
                 newProvider.getFirstName(), newProvider.getLastName(), newProvider.getTelephone(), newProvider.getWhatsApp(),
-                newProvider.getAddress(), true, services, new LinkedHashMap<>(),null,null, new ArrayList<>(),0.0);
+                newProvider.getAddress(), true, services, new LinkedHashMap<>(), null, null, new ArrayList<>(), 0.0);
         providerRepository.save(provider);
         return providerToProviderDto(provider);
     }
@@ -55,16 +62,16 @@ public class ProviderServiceImpl implements ProviderService {
 
     @Override
     public Schedule createSchedule(String email, ScheduleDto schedule) {
-        return schedule(email,schedule);
-        }
+        return schedule(email, schedule);
+    }
 
     @Override
     public Schedule updateSchedule(String email, ScheduleDto schedule) {
-        return schedule(email,schedule);
+        return schedule(email, schedule);
 
     }
 
-    private Schedule schedule(String email, ScheduleDto schedule){
+    private Schedule schedule(String email, ScheduleDto schedule) {
         DayOfWeek sunday = convertToDayOfWeek(schedule.getSunday());
         DayOfWeek monday = convertToDayOfWeek(schedule.getMonday());
         DayOfWeek tuesday = convertToDayOfWeek(schedule.getTuesday());
@@ -82,13 +89,12 @@ public class ProviderServiceImpl implements ProviderService {
     }
 
 
-
     private DayOfWeek convertToDayOfWeek(DayOfWeekDto dayOfWeekDto) {
-        if(dayOfWeekDto==null) {
+        if (dayOfWeekDto == null) {
             return null;
         }
 
-        DayOfWeek day = new DayOfWeek(dayOfWeekDto.getName(),dayOfWeekDto.getIsAvailable(),dayOfWeekDto.getStartDay(), dayOfWeekDto.getEndDay(),
+        DayOfWeek day = new DayOfWeek(dayOfWeekDto.getName(), dayOfWeekDto.getIsAvailable(), dayOfWeekDto.getStartDay(), dayOfWeekDto.getEndDay(),
                 dayOfWeekDto.getBreakeInMinute(), dayOfWeekDto.getBreakStart());
         return day;
     }
@@ -116,22 +122,23 @@ public class ProviderServiceImpl implements ProviderService {
         return hashPassword.equals(provider.getPassword());
 
     }
+
     @Override
-    public ProviderDto showProfileProvider(String email){
+    public ProviderDto showProfileProvider(String email) {
         Provider provider = providerRepository.findById(email).get();
         return providerToProviderDto(provider);
     }
 
     ProviderDto providerToProviderDto(Provider provider) {
-        return new ProviderDto(provider.getProfession(),provider.getFirstName(),provider.getLastName(),
-                provider.getTelephone(),provider.getWhatsApp(),provider.getAddress(),provider.getIsActive(),provider.getServices(),
+        return new ProviderDto(provider.getProfession(), provider.getFirstName(), provider.getLastName(),
+                provider.getTelephone(), provider.getWhatsApp(), provider.getAddress(), provider.getIsActive(), provider.getServices(),
                 provider.getAverageVote());
     }
 
     @Override
     public Schedule deleteSchedule(String email) {
-        DayOfWeek dayOfWeek=new DayOfWeek(null,false,null,null,0,null);
-        Schedule schedule = new Schedule(dayOfWeek,dayOfWeek,dayOfWeek,dayOfWeek,dayOfWeek,dayOfWeek,dayOfWeek);
+        DayOfWeek dayOfWeek = new DayOfWeek(null, false, null, null, 0, null);
+        Schedule schedule = new Schedule(dayOfWeek, dayOfWeek, dayOfWeek, dayOfWeek, dayOfWeek, dayOfWeek, dayOfWeek);
         Provider provider = providerRepository.findById(email).orElse(null);
         provider.setSchedule(schedule);
         providerRepository.save(provider);
@@ -139,82 +146,62 @@ public class ProviderServiceImpl implements ProviderService {
     }
 
     @Override
-    public Set<Provider> showAllProviders(){
+    public Set<Provider> showAllProviders() {
         return providerRepository.findAll().stream().collect(Collectors.toSet());
     }
 
     @Override
-    public Schedule showSchedule(String email){
+    public Schedule showSchedule(String email) {
         Provider provider = providerRepository.findById(email).get();
         return provider.getSchedule();
     }
-    @Override
-    public Map<String,DayOfWeekReal> showRealSchedule(String email){
-        Provider provider=providerRepository.findById(email).get();
-        return  provider.getRealSchedule();
-
-    }
 
     @Override
-    public Set<String> showAllClientsForProvider(String email){
+    public Map<String, DayOfWeekReal> showRealSchedule(String email) {
         Provider provider = providerRepository.findById(email).get();
-        LinkedHashMap<String,Record>records=provider.getRecords();
-        HashSet<String> clientsSet=new HashSet<>();
-        for (Map.Entry<String, Record> entry : records.entrySet()) {
-            clientsSet.add(entry.getValue().getEmailClient());
-        }
-        return clientsSet;
+        return provider.getRealSchedule();
 
     }
+
     @Override
-    public Set<Record>showAllrecordsForDay(String email,String date){
+    public Set<String> showAllClientsForProvider(String email) {
+        return recordRepository.findAll().stream().filter((p) -> p.getEmailProvider().equals(email)).map((p) -> p.getEmailClient())
+                .collect(Collectors.toSet());
+
+    }
+
+    @Override
+    public Set<Record> showAllrecordsForDay(String email, String date) {
         LocalDate dateForm = LocalDate.parse(date);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-        HashSet<Record> recordsSet=new HashSet<>();
-        Provider provider = providerRepository.findById(email).orElse(null);
-        LinkedHashMap<String,Record>records=provider.getRecords();
-        for (Map.Entry<String, Record> entry : records.entrySet()) {
-            LocalDateTime dateTime = LocalDateTime.parse(entry.getKey(), formatter);
-            if(dateTime.toLocalDate().equals(dateForm)){
-                recordsSet.add(entry.getValue());
+        HashSet<Record> recordsSet = new HashSet<>();
+        Set<Record> records = recordRepository.findAll().stream().filter((p) -> p.getEmailProvider().equals(email))
+                .collect(Collectors.toSet());
+        for (Record record : records) {
+            LocalDateTime dateTime = LocalDateTime.parse(record.getStartService(), formatter);
+            if (dateTime.toLocalDate().equals(dateForm)) {
+                recordsSet.add(record);
             }
         }
         return recordsSet;
+
     }
+
     @Override
-    public Set<Record> showArchiveRecords(String email){
-        Provider provider=providerRepository.findById(email).get();
-        HashSet<Record> onlyRecords=new HashSet<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-        LinkedHashMap<String,Record>records=provider.getRecords();
-        for (Map.Entry<String, Record> entry : records.entrySet()) {
-            LocalDateTime key = LocalDateTime.parse(entry.getKey(), formatter);
-            if(key.isBefore(LocalDateTime.now())){
-                onlyRecords.add(entry.getValue());
-            }
-        }
-        return onlyRecords;
+    public Set<Record> showArchiveRecords(String email) {
+        return recordRepository.findAll().stream().filter((p) -> p.getEmailProvider().equals(email))
+                .filter((p) -> LocalDateTime.parse(p.getStartService(), formatter).isBefore(LocalDateTime.now()))
+                .collect(Collectors.toSet());
     }
+
     @Override
-    public Set<Record> showAllrecords(String email) {
-        Provider provider=providerRepository.findById(email).get();
-        HashSet<Record> onlyRecords = new HashSet<>();
-        LocalDateTime dateNow = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-        LinkedHashMap<String, Record> records = provider.getRecords();
-        for (Map.Entry<String, Record> entry : records.entrySet()) {
-            LocalDateTime key = LocalDateTime.parse(entry.getKey(), formatter);
-            if (key.isAfter(dateNow)) {
-                onlyRecords.add(entry.getValue());
-            }
-        }
-        return onlyRecords;
+    public Set<Record> showAllrecordsFromNow(String email) {
+        return recordRepository.findAll().stream().filter((p) -> p.getEmailProvider().equals(email))
+                .filter((p) -> LocalDateTime.parse(p.getStartService(), formatter).isAfter(LocalDateTime.now()))
+                .collect(Collectors.toSet());
     }
-
-
-
-
 }
+
+
 
 
 

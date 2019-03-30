@@ -56,6 +56,9 @@ public class Provider {
                 dayOfWeekReal.setRealTimeRecords(timeRecords);
                 realSchedule.put(keyParse.toString(), dayOfWeekReal);
             }
+            else{
+                records.remove(key);
+            }
         }
         return realSchedule;
     }
